@@ -38,7 +38,7 @@ router.get('/', (req, res) => {
   `);
 });
 
-// JSON со спецификацией OpenAPI
+// JSON with OpenAPI specification
 router.get('/openapi.json', (req, res) => {
     res.json(swaggerSpec);
 });

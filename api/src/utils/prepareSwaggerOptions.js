@@ -4,9 +4,9 @@ const prepareSwaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Example API',
+            title: 'FunFull API',
             version: '1.0.0',
-            description: 'Backend API Documentation',
+            description: 'Backend Documentation',
         },
         components: {
             securitySchemes: {

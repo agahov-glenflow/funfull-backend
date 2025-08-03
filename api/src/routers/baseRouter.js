@@ -5,13 +5,13 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// test GET index
 /**
  * @openapi
  * /:
  *   get:
- *     summary: Test GET-request for index path
- *     description: Return JSON with echo
+ *     tags:
+ *        - Connectivity
+ *     summary: Check API availability
  *     responses:
  *       200:
  *         description: Successful
@@ -34,7 +34,9 @@ router.get("/", async (req, res) => {
  * @openapi
  * /testAuth:
  *   get:
- *     summary: Test GET-request (need to be authorized)
+ *     summary: Check API availability with TOKEN (need to be authorized)
+ *     tags:
+ *        - Connectivity
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -45,13 +47,13 @@ router.get("/testAuth", authMiddleware, async (req, res) => {
     res.json({ result: `Received GET request for path ${req.path}` });
 });
 
-// test POST index
 /**
  * @openapi
  * /:
  *   post:
- *     summary: Test POST endpoint
- *     description: Returns confirmation and echoes the received request body.
+ *     summary: Test POST endpoint (request/response with JSON)
+ *     tags:
+ *        - Connectivity
  *     requestBody:
  *       required: true
  *       content:
