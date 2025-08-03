@@ -1,33 +1,46 @@
-# Express.js on Vercel
+# Express.js API Boilerplate on Vercel
 
-Simple Express.js + Vercel example that uses Vercel Postgres to add and display users in a table.
+A minimal Express.js backend template, fully compatible with Vercel (serverless).  
+Includes modern middleware, ESM support, Swagger (OpenAPI 3) documentation, and environment variables via dotenv.
 
-## How to Use
+---
 
-BE sure to create a Vercel Postgres database and add you environment variables to your `.env` file. You can find an example of the `.env` file in the `.env.example` file.
+## Features
 
-You can choose from one of the following two methods to use this repository:
+- **Express.js** with ESM syntax
+- **Centralized middleware**: logging, error handling, request ID, authorization
+- **Swagger UI** auto-generated API documentation (`/api-docs`)
+- **.env** environment variable support (dotenv)
+- **Ready for local development and Vercel deployment**
 
-### One-Click Deploy
+---
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
+## Quick Start
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/examples/tree/main/solutions/express&project-name=express&repository-name=express)
-
-### Clone and Deploy
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/vercel/examples/tree/main/solutions/express
+git clone <your-repo-url>
+cd <your-project-folder>
 ```
 
-Install the Vercel CLI:
+### 2. Install dependencies
 
 ```bash
-npm i -g vercel
+npm install
 ```
 
-Then run the app at the root of the repository:
+### 3. Set up environment variables
 
+•	Copy .env.example to .env and fill in required values.
+
+### 4. Run locally with Vercel CLI
 ```bash
+npm install vercel
 vercel dev
 ```
+
+The API will be available at http://localhost:3000
+
+Swagger docs: http://localhost:3000/api-docs
+

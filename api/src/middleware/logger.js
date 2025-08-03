@@ -1,5 +1,6 @@
 // api/src/middleware/logger.js
 
+/** Logs requests and responses */
 export function logger(req, res, next) {
     const now = new Date().toISOString();
 

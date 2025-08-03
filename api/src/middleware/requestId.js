@@ -2,6 +2,7 @@
 
 import { v4 as UUIDv4 } from 'uuid';
 
+/** Attaches a unique request ID */
 export function requestId(req, res, next) {
     // Store the `x-request-uuid` from the client or generate new one
     const incomingId = req.headers['x-request-uuid'] || req.headers['x-correlation-id'];

@@ -1,5 +1,6 @@
 // api/src/middleware/errorHandler.js
 
+/** Handles and logs errors */
 export function errorHandler(err, req, res, next) {
     const now = new Date().toISOString();
     console.error(`[${now}] [${req?.requestId}] [Error]`, err);

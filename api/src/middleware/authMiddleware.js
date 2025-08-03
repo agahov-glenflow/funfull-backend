@@ -2,6 +2,7 @@
 
 const secretAccessToken = process.env.SECRET_ACCESS_TOKEN || "";
 
+/** Checks for Bearer token in headers */
 export default function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
 

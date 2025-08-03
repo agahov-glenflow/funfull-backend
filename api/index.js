@@ -9,6 +9,7 @@ import baseRouter from "./src/routers/baseRouter.js";
 import prepareSwaggerOptions from "./src/utils/prepareSwaggerOptions.js";
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
+import apiDocsRouter from "./src/routers/apiDocsRouter.js";
 
 if (process.env.NODE_ENV === 'development') {
 	console.log('Happy developing mode is enabled ✨')
@@ -22,8 +23,9 @@ app.use(express.json()); // Always the second because need to parse JSON
 app.use(logger) // Always the third because need to logging requests and responses
 
 // SWAGGER
-const swaggerSpec = swaggerJSDoc(prepareSwaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// const swaggerSpec = swaggerJSDoc(prepareSwaggerOptions);
+// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', apiDocsRouter);
 console.log('Swagger UI available at http://localhost:' + port + '/api-docs'); // e.g. http://localhost:3000/api-docs
 
 app.use("/", baseRouter) // final router
