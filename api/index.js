@@ -5,9 +5,11 @@ import express from "express";
 import {requestId} from "./src/middleware/requestId.js";
 import {logger} from "./src/middleware/logger.js";
 import {errorHandler} from "./src/middleware/errorHandler.js";
-import baseRouter from "./src/routers/baseRouter.js";
+import baseRouter from "./src/routers/testStatusRouter.js";
 import apiDocsRouter from "./src/routers/apiDocsRouter.js";
-import eventsRouter from "./src/routers/eventsRouter.js";
+import slotsRouter from "./src/routers/slotsRouter.js";
+import ordersRouter from "./src/routers/ordersRouter.js";
+import servicesRouter from "./src/routers/servicesRouter.js";
 
 if (process.env.NODE_ENV === 'development') {
 	console.log('Happy developing mode is enabled ✨')
@@ -23,8 +25,11 @@ app.use(logger) // Always the third because need to logging requests and respons
 // SWAGGER
 app.use('/api-docs', apiDocsRouter); // http://localhost:3000/api-docs
 
-// EVENTS processing
-app.use("/events", eventsRouter);
+// ROUTES
+app.use("/slots", slotsRouter);
+app.use("/order", ordersRouter);
+app.use("/orders", ordersRouter);
+app.use("/services", servicesRouter);
 
 // THE FINAL ROUTER
 app.use("/", baseRouter); // should be always the last
