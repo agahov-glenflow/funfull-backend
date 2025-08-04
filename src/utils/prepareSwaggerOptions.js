@@ -1,4 +1,4 @@
-// api/src/utils/prepareSwaggerOptions.js
+// ./src/utils/prepareSwaggerOptions.js
 
 const prepareSwaggerOptions = {
     definition: {
@@ -39,7 +39,7 @@ const prepareSwaggerOptions = {
             },
         ],
     },
-    apis: ['./api/src/routers/*.js'], // path to routers
+    apis: ['./src/routers/*.js'], // path to routers
 };
 
 export default prepareSwaggerOptions;

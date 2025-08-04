@@ -1,4 +1,4 @@
-// /api/src/services/sheetsService.js
+// ./src/services/sheetsService.js
 
 import { google } from "googleapis";
 import { readFile } from "fs/promises";

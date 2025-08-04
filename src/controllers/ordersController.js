@@ -1,4 +1,4 @@
-// api/src/controllers/ordersController.js
+// ./src/controllers/ordersController.js
 
 import {appendToSpreadsheet, readSpreadsheetList, writeToSpreadsheet} from "../services/sheetsService.js";
 

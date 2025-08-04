@@ -1,4 +1,4 @@
-// api/src/controllers/slotsController.js
+// ./src/controllers/slotsController.js
 
 import {readSpreadsheetList} from "../services/sheetsService.js";
 

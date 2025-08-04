@@ -1,4 +1,4 @@
-// api/src/slotsRouter.js
+// ./src/slotsRouter.js
 
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";

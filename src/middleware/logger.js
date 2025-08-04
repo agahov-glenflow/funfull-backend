@@ -1,4 +1,4 @@
-// api/src/middleware/logger.js
+// ./src/middleware/logger.js
 
 /** Logs requests and responses */
 export function logger(req, res, next) {

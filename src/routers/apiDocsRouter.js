@@ -1,4 +1,4 @@
-// api/src/routers/apiDocsRouter.js
+// ./src/routers/apiDocsRouter.js
 
 import express from "express";
 import swaggerJSDoc from "swagger-jsdoc";

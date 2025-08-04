@@ -1,4 +1,4 @@
-// api/src/middleware/errorHandler.js
+// ./src/middleware/errorHandler.js
 
 /** Handles and logs errors */
 export function errorHandler(err, req, res, next) {

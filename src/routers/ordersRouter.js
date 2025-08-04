@@ -1,4 +1,4 @@
-// api/src/routers/ordersRouter.js
+// ./src/routers/ordersRouter.js
 
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";

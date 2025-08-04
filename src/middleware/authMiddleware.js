@@ -1,4 +1,4 @@
-// api/src/middleware/authMiddleware.js
+// ./src/middleware/authMiddleware.js
 
 const secretAccessToken = process.env.SECRET_ACCESS_TOKEN || "";
 
