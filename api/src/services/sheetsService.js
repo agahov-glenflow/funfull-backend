@@ -7,7 +7,7 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 async function getSheetsClient() {
     const credentials = JSON.parse(
-        await readFile(new URL("../../../credentials/google-credentials.json", import.meta.url), "utf-8")
+        await readFile(new URL("../credentials/google-credentials.json", import.meta.url), "utf-8")
     );
     const auth = new google.auth.GoogleAuth({
         credentials,
