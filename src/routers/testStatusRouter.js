@@ -5,23 +5,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * @openapi
- * /:
- *   get:
- *     tags:
- *       - TestStatus
- *     summary: Check API availability by the Index page
- *     description: Returns a simple HTML page confirming that backend is running.
- *     responses:
- *       200:
- *         description: Successful response (HTML)
- *         content:
- *           text/html:
- *             schema:
- *               type: string
- *               example: "<html><body><h1>Hello, this backend is working correctly.</h1></body></html>"
- */
+/** Check API availability by the Index page - hidden from Swagger */
 router.get("/", (req, res) => {
     res.type("html").send(`
         <html>
@@ -40,54 +24,12 @@ router.get("/", (req, res) => {
     `);
 });
 
-/**
- * @openapi
- * /testAuth:
- *   get:
- *     summary: Check API availability with TOKEN (need to be authorized)
- *     tags:
- *        - TestStatus
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successful answer
- */
+/** Check API availability with TOKEN (need to be authorized) - hidden from Swagger */
 router.get("/testAuth", authMiddleware, async (req, res) => {
     res.json({ result: `Received GET request for path ${req.path}` });
 });
 
-/**
- * @openapi
- * /testPost:
- *   post:
- *     summary: Test POST endpoint (request/response with JSON)
- *     tags:
- *        - TestStatus
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             example:
- *               key: value
- *     responses:
- *       200:
- *         description: Successful response with echoed request body
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 result:
- *                   type: string
- *                   example: "Received POST request for path /. Return the same body."
- *                 originalBody:
- *                   type: object
- *                   example:
- *                     key: value
- */
+/** Test POST endpoint (request/response with JSON) - hidden from Swagger */
 router.post("/testPost", async (req, res) => {
     res.json({
         result: `Received POST request for path ${req.path}. Return the same body.`,

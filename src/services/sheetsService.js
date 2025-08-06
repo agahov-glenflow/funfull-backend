@@ -1,14 +1,13 @@
 // ./src/services/sheetsService.js
 
 import { google } from "googleapis";
-import { readFile } from "fs/promises";
+import {googleCredentials} from "../utils/googleCredentials.js";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 async function getSheetsClient() {
-    const credentials = JSON.parse(
-        await readFile(new URL("../credentials/google-credentials.json", import.meta.url), "utf-8")
-    );
+    const credentials = googleCredentials();
+
     const auth = new google.auth.GoogleAuth({
         credentials,
         scopes: SCOPES,

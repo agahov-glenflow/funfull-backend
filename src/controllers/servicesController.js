@@ -20,20 +20,39 @@ export async function getAllServices(req, res) {
     try {
         const rows = await readSpreadsheetList(SPREADSHEET_ID, SERVICES_SHEET);
 
-        if (!rows || rows.length < 2) {
+        if (!rows || rows.length < 3) {
             return res.json({ services: [] });
         }
 
-        const [header, ...dataRows] = rows;
+        // [0] — warning, [1] — headers
+        const [, header, ...dataRows] = rows;
+
+        // define names for relatedServices
+        const relatedHeaders = header.slice(2); // start from 3 column
 
         const services = dataRows
             .filter(row => row[0] && row[0].trim())
             .map(row => {
-                const service = {};
-                for (let i = 0; i < header.length; i++) {
-                    service[header[i]] = row[i] ?? "";
+                // Primary Service
+                const service = {
+                    name: (row[0] ?? "").toString().trim(),
+                    price: (row[1] ?? "").replace(/[^\d.]/g, ""), // only numbers and dot
+                };
+
+                // Related services — by headers and values if values exist
+                const relatedServices = [];
+                for (let i = 0; i < relatedHeaders.length; i++) {
+                    const colValue = row[i + 2]; // related starts from index 2
+                    if (colValue && typeof colValue === "string" && colValue.toLowerCase() !== "not available") {
+                        relatedServices.push({
+                            name: relatedHeaders[i],
+                            price: colValue.replace(/[^\d.]/g, ""),
+                        });
+                    }
                 }
-                return filterNonEmptyFields(service);
+                if (relatedServices.length) service.relatedServices = relatedServices;
+
+                return service;
             });
 
         res.json({ services });

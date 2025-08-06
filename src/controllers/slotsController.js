@@ -3,14 +3,14 @@
 import {readSpreadsheetList} from "../services/sheetsService.js";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
-const SCHEDULE_LIST = "Schedule";
+const SCHEDULE_LIST = "Slots";
 
 export async function getAvailableSlots(req, res) {
     try {
         const rows = await readSpreadsheetList(SPREADSHEET_ID, SCHEDULE_LIST);
 
-        // First row is headers
-        const [header, ...dataRows] = rows;
+        // First row is warning, then headers
+        const [, header, ...dataRows] = rows;
 
         // Transform each row to object like { date: ..., "10:00": "1", ... }
         const slots = dataRows.map(row => {

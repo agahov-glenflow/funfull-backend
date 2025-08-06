@@ -15,87 +15,111 @@ const router = express.Router();
 
 /**
  * @openapi
- * /orders:
- *   get:
- *     summary: Get all orders (need to be authorized)
+ * /order:
+ *   post:
+ *     summary: Create a new order (requires authorization)
  *     tags:
  *       - Orders
  *     security:
- *        - bearerAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: "session-123"
+ *               name:
+ *                 type: string
+ *                 example: "John Doe"
+ *               phone:
+ *                 type: string
+ *                 example: "+1234567890"
+ *               services:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               slot:
+ *                 type: string
+ *                 example: "2023-10-27T14:30:00-04:00"
+ *                 description: Selected time slot for the event
+ *               details:
+ *                 type: string
+ *                 example: "2 participants, birthday party"
+ *                 description: Additional wishes or order details
  *     responses:
- *       200:
- *         description: List of orders
+ *       201:
+ *         description: Order created successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 orders:
+ *                 sessionId:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 phone:
+ *                   type: string
+ *                 services:
  *                   type: array
  *                   items:
  *                     type: object
- */
-router.get("/", authMiddleware, getAllOrders);
-
-/**
- * @openapi
- * /order:
- *   post:
- *     summary: Create a new order (need to be authorized)
- *     tags:
- *       - Orders
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: Order created
- *         content:
- *           application/json:
- *             schema:
- *               type: object
+ *                 slot:
+ *                   type: string
+ *                   description: Selected time slot for the event
+ *                 price:
+ *                   type: string
+ *                   description: Full order price
+ *                 status:
+ *                   type: string
+ *                   example: "pending"
+ *                 details:
+ *                   type: string
+ *                   description: Additional wishes or order details
+ *                 created_at:
+ *                   type: string
+ *                   example: "2023-10-27T14:30:00-04:00"
+ *                   description: Date and time when order was created
+ *             examples:
+ *               example:
+ *                 summary: Example response
+ *                 value:
+ *                   sessionId: "session-123"
+ *                   name: "John Doe"
+ *                   phone: "+1234567890"
+ *                   services:
+ *                     - name: "10 Jumpers Ticket"
+ *                       price: "319.95"
+ *                       relatedServices:
+ *                         - name: "Upgrade to 2nd Floor Tables"
+ *                           price: "120.00"
+ *                     - name: "Mini-Melts"
+ *                       price: "5.00"
+ *                   slot: "2023-10-27T14:30:00-04:00"
+ *                   price: "444.95"
+ *                   status: "pending"
+ *                   details: "2 participants, birthday party"
+ *                   createdAt: "2023-10-27T14:30:00-04:00"
  */
 router.post("/", createOrder);
 
-/**
- * @openapi
- * /order/{orderId}:
- *   put:
- *     summary: Update an order by Session Id (need to be authorized)
- *     tags:
- *       - Orders
- *     parameters:
- *       - in: path
- *         name: orderId
- *         schema:
- *           type: string
- *         required: true
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Order updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *       404:
- *         description: Order not found
- */
+/** Get all orders (need to be authorized) - hidden from swagger */
+router.get("/", authMiddleware, getAllOrders);
+
+
+
+/** Update an order (need to be authorized) - hidden from swagger */
 router.put("/:orderId", updateOrder);
 
 /**
  * @openapi
  * /order/{orderId}:
  *   get:
- *     summary: Get an order by Session Id (need to be authorized)
+ *     summary: Get an order by Order Id (requires authorization)
  *     tags:
  *       - Orders
  *     security:
@@ -115,8 +139,34 @@ router.put("/:orderId", updateOrder);
  *             schema:
  *               type: object
  *               properties:
- *                 order:
- *                   type: object
+ *                 sessionId:
+ *                   type: string
+ *                   example: "session-123"
+ *                 name:
+ *                   type: string
+ *                   example: "John Doe"
+ *                 phone:
+ *                   type: string
+ *                   example: "+1234567890"
+ *                 services:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 slot:
+ *                   type: string
+ *                   example: "2023-10-27T14:30:00-04:00"
+ *                 price:
+ *                   type: string
+ *                   example: "448.95"
+ *                 status:
+ *                   type: string
+ *                   example: "pending"
+ *                 details:
+ *                   type: string
+ *                   example: "2 participants"
+ *                 createdAt:
+ *                   type: string
+ *                   example: "2023-10-27T14:30:00-04:00"
  *       404:
  *         description: Order not found
  *         content:
@@ -132,9 +182,9 @@ router.get("/:orderId", authMiddleware, getOrder);
 
 /**
  * @openapi
- * /order/{orderId}/form:
+ * /order/{orderId}/checkout:
  *   get:
- *     summary: Render payment form for the order
+ *     summary: Render fake payment form for the order
  *     tags:
  *       - Orders
  *     parameters:
@@ -160,13 +210,13 @@ router.get("/:orderId", authMiddleware, getOrder);
  *               type: string
  *               example: "<html><body><h1>Order not found</h1></body></html>"
  */
-router.get("/:orderId/form", getPaymentForm);
+router.get("/:orderId/checkout", getPaymentForm);
 
 /**
  * @openapi
  * /order/{orderId}/checkout:
  *   post:
- *     summary: Confirm payment for the order
+ *     summary: Confirm fake payment for the order
  *     tags:
  *       - Orders
  *     parameters:

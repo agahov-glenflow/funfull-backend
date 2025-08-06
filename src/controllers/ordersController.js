@@ -8,16 +8,26 @@ const ORDERS_SHEET = "Orders";
 export async function getAllOrders(req, res) {
     try {
         const rows = await readSpreadsheetList(SPREADSHEET_ID, ORDERS_SHEET);
-        if (!rows || rows.length < 2) {
+        if (!rows || rows.length < 3) {
             // no orders
             return res.json({ orders: [] });
         }
-        const [header, ...dataRows] = rows;
+        const [warning, header, ...dataRows] = rows;
         // Transform each row to an object
         const orders = dataRows.map(row => {
             const order = {};
             for (let i = 0; i < header.length; i++) {
-                order[header[i]] = row[i] ?? "";
+                const key = header[i];
+                // Если поле services — парсим JSON
+                if (key === "services" && typeof row[i] === "string") {
+                    try {
+                        order[key] = JSON.parse(row[i]);
+                    } catch {
+                        order[key] = [];
+                    }
+                } else {
+                    order[key] = row[i] ?? "";
+                }
             }
             return order;
         });
@@ -29,25 +39,63 @@ export async function getAllOrders(req, res) {
     }
 }
 
-/**
- * Create new order (append to the end of a table)
- * Requirements: Session Id, Date, Name, Phone, Price, Status, Order Details
- */
+function sumServices(services) {
+    let total = 0;
+    for (const svc of services) {
+        const price = parseFloat((svc.price || "0").replace(",", "."));
+        total += isNaN(price) ? 0 : price;
+        if (Array.isArray(svc.relatedServices)) {
+            total += sumServices(svc.relatedServices);
+        }
+    }
+    return total;
+}
+
 export async function createOrder(req, res) {
     try {
-        const order = req.body;
+        const { sessionId, name, phone, services, slot, details } = req.body;
 
-        // 1. Get headers
+        // 1. Omit the first row (warning), take the seconds as a header
         const rows = await readSpreadsheetList(SPREADSHEET_ID, ORDERS_SHEET);
-        const header = rows[0];
+        const header = rows[1];
 
-        // 2. Make properly row
-        const rowToAppend = header.map(key => order[key] ?? "");
+        // 2. Serialize array to string
+        const servicesCell = JSON.stringify(services);
 
-        // 3. append
+        // 3. Sum
+        const price = sumServices(services).toFixed(2);
+
+        const createdAt = new Date().toISOString();
+
+        // 4. Create a row
+        const status = "pending";
+        const rowToAppend = header.map(key => {
+            if (key === "sessionId") return sessionId ?? "";
+            if (key === "name") return name ?? "";
+            if (key === "phone") return phone ?? "";
+            if (key === "services") return servicesCell;
+            if (key === "slot") return slot ?? "";
+            if (key === "details") return details ?? "";
+            if (key === "price") return price;
+            if (key === "status") return status;
+            if (key === "createdAt") return createdAt;
+            return "";
+        });
+
         await appendToSpreadsheet(SPREADSHEET_ID, ORDERS_SHEET, [rowToAppend]);
 
-        res.status(201).json({ status: "ok", order });
+        // Return the same object + status + fullPrice (for front)
+        res.status(201).json({
+            sessionId,
+            name,
+            phone,
+            services,
+            slot,
+            price,
+            status,
+            details,
+            createdAt
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to create order in Google Sheets" });
@@ -62,13 +110,32 @@ export async function updateOrder(req, res) {
 
         if (!result) return res.status(404).json({ error: "Order not found" });
 
-        // Update fields
+        // update fields
         Object.assign(result.order, updatedFields);
+
+        // serialize services
+        if (Array.isArray(result.order.services)) {
+            result.order.services = JSON.stringify(result.order.services);
+        }
+
+        // create row
         const updatedRow = result.header.map(key => result.order[key] ?? "");
-        const range = `${ORDERS_SHEET}!A${result.rowIndex + 1}`;
+
+        // define right range
+        const range = `${ORDERS_SHEET}!A${result.rowIndex + 2}`;
         await writeToSpreadsheet(SPREADSHEET_ID, range, [updatedRow]);
 
-        res.json({ status: "ok", order: result.order });
+        // answer order with parsed services
+        const responseOrder = { ...result.order };
+        if (typeof responseOrder.services === "string") {
+            try {
+                responseOrder.services = JSON.parse(responseOrder.services);
+            } catch {
+                responseOrder.services = [];
+            }
+        }
+
+        res.json({ status: "ok", order: responseOrder });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to update order in Google Sheets" });
@@ -91,9 +158,9 @@ export async function getOrder(req, res) {
 
 async function findOrderBySessionId(orderId) {
     const rows = await readSpreadsheetList(SPREADSHEET_ID, ORDERS_SHEET);
-    if (!rows || rows.length < 2) return null;
+    if (!rows || rows.length < 3) return null;
 
-    const [header, ...dataRows] = rows;
+    const [warning, header, ...dataRows] = rows;
     let rowIndex = -1;
 
     for (let i = 0; i < dataRows.length; i++) {
@@ -106,10 +173,37 @@ async function findOrderBySessionId(orderId) {
 
     const order = {};
     for (let i = 0; i < header.length; i++) {
-        order[header[i]] = dataRows[rowIndex - 1][i] ?? "";
+        const key = header[i];
+        if (key === "services" && typeof dataRows[rowIndex - 1][i] === "string") {
+            try {
+                order[key] = JSON.parse(dataRows[rowIndex - 1][i]);
+            } catch {
+                order[key] = [];
+            }
+        } else {
+            order[key] = dataRows[rowIndex - 1][i] ?? "";
+        }
     }
 
     return { order, rowIndex, header, dataRows };
+}
+
+function renderServicesHtml(services) {
+    if (!services || !Array.isArray(services) || services.length === 0) return '<div style="color:#aaa">No services</div>';
+    return `<ul class="services">
+        ${services.map(service => `
+            <li>
+                <strong>${service.name}</strong> — $${service.price}
+                ${service.relatedServices && service.relatedServices.length
+        ? `<ul>
+                        ${service.relatedServices.map(rel => `
+                            <li>${rel.name} — $${rel.price}</li>
+                        `).join('')}
+                     </ul>`
+        : ''}
+            </li>
+        `).join('')}
+    </ul>`;
 }
 
 export async function getPaymentForm(req, res) {
@@ -124,43 +218,21 @@ export async function getPaymentForm(req, res) {
         }
 
         // 1. Update status to "opened"
-        result.order["Status"] = "opened";
-        const updatedRow = result.header.map(key => result.order[key] ?? "");
-        const range = `${ORDERS_SHEET}!A${result.rowIndex + 1}`;
+        result.order.status = "opened";
+        const updatedRow = result.header.map(key => {
+            if (key === "services") {
+                // serialize services
+                return typeof result.order.services === "string"
+                    ? result.order.services
+                    : JSON.stringify(result.order.services ?? []);
+            }
+            return result.order[key] ?? "";
+        });
+        const range = `${ORDERS_SHEET}!A${result.rowIndex + 2}`;
         await writeToSpreadsheet(SPREADSHEET_ID, range, [updatedRow]);
 
         // 2. Render HTML-page with payment
-        res.type("html").send(`
-            <html>
-              <head>
-                <title>Order Payment</title>
-                <style>
-                  body { font-family: sans-serif; background: #f9f9f9; padding: 40px; color: #222; }
-                  .order-block { background: #fff; border-radius: 12px; padding: 32px 24px 20px; box-shadow: 0 2px 12px #0001; max-width: 420px; margin: 0 auto; }
-                  h1 { font-size: 1.7em; }
-                  .field { margin-bottom: 10px; }
-                  label { color: #444; font-weight: 600; }
-                  .val { color: #1a2232; margin-left: 8px; }
-                  .pay-btn { padding: 12px 32px; background: #29d; color: #fff; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; margin-top: 18px;}
-                  .pay-btn:hover { background: #176edb;}
-                </style>
-              </head>
-              <body>
-                <div class="order-block">
-                  <h1>Pay for your order</h1>
-                  <div class="field"><label>Order:</label> <span class="val">${result.order["Session Id"]}</span></div>
-                  <div class="field"><label>Name:</label> <span class="val">${result.order["Name"]}</span></div>
-                  <div class="field"><label>Phone:</label> <span class="val">${result.order["Phone"]}</span></div>
-                  <div class="field"><label>Price:</label> <span class="val">${result.order["Price"]}</span></div>
-                  <div class="field"><label>Status:</label> <span class="val">${result.order["Status"]}</span></div>
-                  <div class="field"><label>Order Details:</label> <span class="val">${result.order["Order Details"]}</span></div>
-                  <form method="POST" action="/orders/${encodeURIComponent(result.order["Session Id"])}/checkout">
-                    <button type="submit" class="pay-btn">Make Payment</button>
-                  </form>
-                </div>
-              </body>
-            </html>
-        `);
+        res.type("html").send(renderOrderPaymentPage(result.order));
 
     } catch (err) {
         console.error(err);
@@ -168,6 +240,86 @@ export async function getPaymentForm(req, res) {
             <html><body><h1>Internal server error</h1></body></html>
         `);
     }
+}
+
+function renderOrderPaymentPage(order) {
+    // services
+    let services = [];
+    try {
+        services = typeof order.services === "string" ? JSON.parse(order.services) : (order.services ?? []);
+    } catch (_) {
+        services = [];
+    }
+
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Order Payment</title>
+        <style>
+          body { font-family: system-ui, sans-serif; background: #f5f7fa; margin: 0; color: #222; }
+          .order-block {
+            background: #fff;
+            border-radius: 14px;
+            padding: 28px 20px 20px;
+            box-shadow: 0 2px 16px #0002;
+            max-width: 420px;
+            margin: 4vw auto;
+            min-height: 80vh;
+          }
+          h1 { font-size: 1.25em; font-weight: 700; margin-top: 0; margin-bottom: 18px; }
+          .field { margin-bottom: 10px; }
+          label { color: #555; font-weight: 600; min-width: 110px; display: inline-block; }
+          .val { color: #1a2232; margin-left: 2px; }
+          .services { margin: 15px 0 12px 0; padding-left: 0; }
+          .services li { font-size: 1em; margin-bottom: 8px; font-weight: 500; }
+          .services li strong { font-size: 1em; }
+          .services ul { margin-top: 2px; margin-bottom: 2px; padding-left: 19px; }
+          .pay-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: linear-gradient(90deg, #1a7cff, #51bbfe);
+            color: #fff; border: none; border-radius: 8px;
+            font-size: 1.1em; cursor: pointer; margin-top: 22px; font-weight: 600;
+            box-shadow: 0 1px 8px #1a7cff22;
+            transition: background 0.15s;
+          }
+          .pay-btn:hover { background: #155bc1; }
+          .footnote {
+            margin-top: 18px; color: #888; font-size: 0.97em; text-align: center;
+          }
+          @media (max-width: 560px) {
+            .order-block { max-width: 97vw; min-height: auto; padding: 18px 2vw 12px 2vw;}
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="order-block">
+          <h1>Pay the deposit for your order</h1>
+          <div class="field"><label>Order:</label> <span class="val">${order.sessionId}</span></div>
+          <div class="field"><label>Name:</label> <span class="val">${order.name}</span></div>
+          <div class="field"><label>Phone:</label> <span class="val">${order.phone}</span></div>
+          <div class="field"><label>Slot:</label> <span class="val">${order.slot ?? ""}</span></div>
+          <div class="field"><label>Order Details:</label> <span class="val">${order.details ?? ""}</span></div>
+          <div class="field"><label>Full Price:</label> <span class="val">$${order.price}</span></div>
+          <div class="field"><label>Status:</label> <span class="val">${order.status}</span></div>
+          <div class="field"><label>Services:</label></div>
+          ${renderServicesHtml(services)}
+          <form method="POST" action="/orders/${encodeURIComponent(order.sessionId)}/checkout">
+            <input type="hidden" name="amount" value="100.00" />
+            <input type="hidden" name="purpose" value="Deposit" />
+            <button type="submit" class="pay-btn">Pay $100.00 Deposit</button>
+          </form>
+          <div class="footnote">
+            After payment, the deposit will be credited to your order.
+          </div>
+        </div>
+      </body>
+    </html>
+    `;
 }
 
 export async function checkoutOrder(req, res) {
@@ -187,18 +339,26 @@ export async function checkoutOrder(req, res) {
         }
 
         // Update status to "paid"
-        result.order["Status"] = "paid";
-        const updatedRow = result.header.map(key => result.order[key] ?? "");
-        const range = `${ORDERS_SHEET}!A${result.rowIndex + 1}`;
+        result.order.status = "paid";
+        const updatedRow = result.header.map(key => {
+            if (key === "services") {
+                // serialize services
+                return typeof result.order.services === "string"
+                    ? result.order.services
+                    : JSON.stringify(result.order.services ?? []);
+            }
+            return result.order[key] ?? "";
+        });
+        const range = `${ORDERS_SHEET}!A${result.rowIndex + 2}`;
         await writeToSpreadsheet(SPREADSHEET_ID, range, [updatedRow]);
 
         res.type("html").send(`
             <html>
               <body>
                 <h1>Payment successful</h1>
-                <p>Thank you for your purchase!</p>
-                <p>Order ID: <b>${result.order["Session Id"]}</b></p>
-                <p>Status: <b>${result.order["Status"]}</b></p>
+                <p>Thank you for your order!</p>
+                <p>Order ID: <b>${result.order["sessionId"]}</b></p>
+                <p>Status: <b>${result.order["s tatus"]}</b></p>
               </body>
             </html>
         `);

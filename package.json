@@ -20,6 +20,6 @@
 		"swagger-jsdoc": "^6.2.8",
 		"swagger-ui-express": "^5.0.1",
 		"uuid": "^11.1.0",
-		"vercel": "^44.7.0"
+		"vercel": "^44.7.3"
 	}
 }
